@@ -5,125 +5,146 @@ import 'package:flutter/services.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 class PermissionsService {
-  // تعريف قناة المنصة باسم الحزمة الصحيح
+  // ثوابت
   static const platform = MethodChannel('com.example.v2/permissions');
 
-  // تحقق من جميع الأذونات المطلوبة
+  // ===== طرق الواجهة العامة =====
+
+  /// تحقق من جميع الأذونات المطلوبة بدون طلب تلقائي
   static Future<bool> checkAllPermissions(BuildContext context) async {
     // تحقق من أذونات أساسية
-    bool hasBasePermissions = await _checkAndRequestBasePermissions();
-    if (!hasBasePermissions) {
-      return false;
-    }
+    bool hasBasePermissions = await _checkBasePermissions();
+    if (!hasBasePermissions) return false;
 
-    // تحقق من إذن إحصائيات الاستخدام (يحتاج صفحة إعدادات خاصة)
-    bool hasUsageStats = await _checkAndRequestUsageStatsPermission(context);
-    if (!hasUsageStats) {
-      return false;
-    }
+    // تحقق من إذن إحصائيات الاستخدام
+    bool hasUsageStats = await _checkUsageStatsPermission(context);
+    if (!hasUsageStats) return false;
 
-    // تحقق من تجاهل تحسينات البطارية (للأندرويد 12+)
-    bool hasBatteryOptimizationIgnored =
-        await _checkAndRequestBatteryOptimization(context);
-
-    return hasBatteryOptimizationIgnored;
+    // تحقق من تجاهل تحسينات البطارية
+    return await _checkBatteryOptimization(context);
   }
 
-  // التحقق من وطلب الأذونات الأساسية
-  static Future<bool> _checkAndRequestBasePermissions() async {
+  /// طلب جميع الأذونات اللازمة (لاستخدامه عند طلب المستخدم)
+  static Future<bool> requestAllPermissions(BuildContext context) async {
+    // طلب الأذونات الأساسية
+    bool hasBasePermissions = await _requestBasePermissions();
+    if (!hasBasePermissions) return false;
+
+    // طلب إذن إحصائيات الاستخدام
+    bool hasUsageStats = await _checkAndRequestUsageStatsPermission(context);
+    if (!hasUsageStats) return false;
+
+    // طلب تجاهل تحسينات البطارية
+    return await _checkAndRequestBatteryOptimization(context);
+  }
+
+  // ===== طرق التحقق من الأذونات =====
+
+  /// التحقق فقط من الأذونات الأساسية بدون طلبها
+  static Future<bool> _checkBasePermissions() async {
+    // تصحيح الطريقة - التحقق فقط بدون طلب
+    Map<Permission, PermissionStatus> statuses = {
+      Permission.phone: await Permission.phone.status,
+      Permission.notification: await Permission.notification.status,
+    };
+
+    return statuses.values.every((status) => status.isGranted);
+  }
+
+  /// طلب الأذونات الأساسية
+  static Future<bool> _requestBasePermissions() async {
     Map<Permission, PermissionStatus> statuses = await [
       Permission.phone,
       Permission.notification,
     ].request();
 
-    // تحقق ما إذا تم منح جميع الأذونات
-    bool allGranted = true;
-    statuses.forEach((permission, status) {
-      if (!status.isGranted) {
-        allGranted = false;
-      }
-    });
-
-    return allGranted;
+    return statuses.values.every((status) => status.isGranted);
   }
 
-  // التحقق من وطلب إذن إحصائيات الاستخدام
-  static Future<bool> _checkAndRequestUsageStatsPermission(
-      BuildContext context) async {
-    bool hasPermission = false;
-
+  /// التحقق فقط من إذن إحصائيات الاستخدام
+  static Future<bool> _checkUsageStatsPermission(BuildContext context) async {
     try {
-      hasPermission = await platform.invokeMethod('checkUsageStatsPermission');
+      bool hasPermission =
+          await platform.invokeMethod('checkUsageStatsPermission');
+      return hasPermission;
     } on PlatformException catch (e) {
       print("خطأ في التحقق من إذن إحصائيات الاستخدام: ${e.message}");
       return false;
     }
-
-    if (!hasPermission) {
-      // إظهار حوار لتوجيه المستخدم إلى الإعدادات
-      await _showUsageAccessDialog(context);
-
-      // التحقق مرة أخرى بعد عودة المستخدم
-      try {
-        hasPermission =
-            await platform.invokeMethod('checkUsageStatsPermission');
-      } on PlatformException catch (e) {
-        print("خطأ في التحقق من إذن إحصائيات الاستخدام: ${e.message}");
-        return false;
-      }
-    }
-
-    return hasPermission;
   }
 
-  // التحقق من وطلب تجاهل تحسينات البطارية
-  static Future<bool> _checkAndRequestBatteryOptimization(
-      BuildContext context) async {
-    if (!Platform.isAndroid) {
-      return true; // لا حاجة لهذا الإذن على غير أندرويد
-    }
+  /// التحقق فقط من تجاهل تحسينات البطارية
+  static Future<bool> _checkBatteryOptimization(BuildContext context) async {
+    if (!Platform.isAndroid) return true;
 
-    // تحقق من إصدار أندرويد (نحتاج الإذن فقط للإصدار 12+)
     final deviceInfo = DeviceInfoPlugin();
     final androidInfo = await deviceInfo.androidInfo;
     final sdkVersion = androidInfo.version.sdkInt ?? 0;
 
-    if (sdkVersion < 31) {
-      // أندرويد 12 هو SDK 31
-      return true; // لا حاجة للإذن على إصدارات أقدم
-    }
-
-    bool isIgnoringBatteryOptimizations = false;
+    if (sdkVersion < 31) return true;
 
     try {
-      isIgnoringBatteryOptimizations =
+      bool isIgnoringBatteryOptimizations =
           await platform.invokeMethod('isIgnoringBatteryOptimizations');
+      return isIgnoringBatteryOptimizations;
     } on PlatformException catch (e) {
       print("خطأ في التحقق من إذن تجاهل تحسينات البطارية: ${e.message}");
       return false;
     }
-
-    if (!isIgnoringBatteryOptimizations) {
-      // إظهار حوار لتوجيه المستخدم للسماح بتجاهل تحسينات البطارية
-      await _showBatteryOptimizationDialog(context);
-
-      // طلب الإذن
-      try {
-        await platform.invokeMethod('requestIgnoreBatteryOptimizations');
-
-        // التحقق مرة أخرى بعد عودة المستخدم
-        isIgnoringBatteryOptimizations =
-            await platform.invokeMethod('isIgnoringBatteryOptimizations');
-      } on PlatformException catch (e) {
-        print("خطأ في طلب إذن تجاهل تحسينات البطارية: ${e.message}");
-        return false;
-      }
-    }
-
-    return isIgnoringBatteryOptimizations;
   }
 
-  // عرض حوار لتوجيه المستخدم إلى إعدادات إذن الوصول للاستخدام
+  /// التحقق من وطلب إذن إحصائيات الاستخدام
+  static Future<bool> _checkAndRequestUsageStatsPermission(
+      BuildContext context) async {
+    try {
+      bool hasPermission =
+          await platform.invokeMethod('checkUsageStatsPermission');
+
+      if (!hasPermission) {
+        await _showUsageAccessDialog(context);
+        hasPermission =
+            await platform.invokeMethod('checkUsageStatsPermission');
+      }
+
+      return hasPermission;
+    } on PlatformException catch (e) {
+      print("خطأ في التحقق من إذن إحصائيات الاستخدام: ${e.message}");
+      return false;
+    }
+  }
+
+  /// التحقق من وطلب تجاهل تحسينات البطارية
+  static Future<bool> _checkAndRequestBatteryOptimization(
+      BuildContext context) async {
+    if (!Platform.isAndroid) return true;
+
+    final deviceInfo = DeviceInfoPlugin();
+    final androidInfo = await deviceInfo.androidInfo;
+    final sdkVersion = androidInfo.version.sdkInt ?? 0;
+
+    if (sdkVersion < 31) return true;
+
+    try {
+      bool isIgnoringBatteryOptimizations =
+          await platform.invokeMethod('isIgnoringBatteryOptimizations');
+
+      if (!isIgnoringBatteryOptimizations) {
+        await _showBatteryOptimizationDialog(context);
+        await platform.invokeMethod('requestIgnoreBatteryOptimizations');
+        isIgnoringBatteryOptimizations =
+            await platform.invokeMethod('isIgnoringBatteryOptimizations');
+      }
+
+      return isIgnoringBatteryOptimizations;
+    } on PlatformException catch (e) {
+      print("خطأ في التحقق من إذن تجاهل تحسينات البطارية: ${e.message}");
+      return false;
+    }
+  }
+
+  // ===== طرق واجهة المستخدم =====
+
+  /// عرض حوار لتوجيه المستخدم إلى إعدادات إذن الوصول للاستخدام
   static Future<void> _showUsageAccessDialog(BuildContext context) async {
     return showDialog(
       context: context,
@@ -139,7 +160,6 @@ class PermissionsService {
               child: const Text('الإعدادات'),
               onPressed: () async {
                 Navigator.of(context).pop();
-                // فتح صفحة إعدادات الوصول للاستخدام
                 try {
                   await platform.invokeMethod('openUsageAccessSettings');
                 } on PlatformException catch (e) {
@@ -159,7 +179,7 @@ class PermissionsService {
     );
   }
 
-  // عرض حوار لتوجيه المستخدم إلى إعدادات تجاهل تحسينات البطارية
+  /// عرض حوار لتوجيه المستخدم إلى إعدادات تجاهل تحسينات البطارية
   static Future<void> _showBatteryOptimizationDialog(
       BuildContext context) async {
     return showDialog(
