@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/data_usage_model.dart';
 import '../services/data_usage_service.dart';
 
 class DataUsageStreamWidget extends StatefulWidget {

@@ -4,13 +4,14 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
+/// خدمة إدارة الأذونات في التطبيق
 class PermissionsService {
-  // ثوابت
+  // ===== الثوابت =====
   static const platform = MethodChannel('com.example.v2/permissions');
 
-  // ===== طرق الواجهة العامة =====
+  // ===== الواجهة العامة =====
 
-  /// تحقق من جميع الأذونات المطلوبة بدون طلب تلقائي
+  /// التحقق من جميع الأذونات المطلوبة بدون طلبها تلقائياً
   static Future<bool> checkAllPermissions(BuildContext context) async {
     // تحقق من أذونات أساسية
     bool hasBasePermissions = await _checkBasePermissions();
@@ -24,7 +25,7 @@ class PermissionsService {
     return await _checkBatteryOptimization(context);
   }
 
-  /// طلب جميع الأذونات اللازمة (لاستخدامه عند طلب المستخدم)
+  /// طلب جميع الأذونات اللازمة وانتظار استجابة المستخدم
   static Future<bool> requestAllPermissions(BuildContext context) async {
     // طلب الأذونات الأساسية
     bool hasBasePermissions = await _requestBasePermissions();
@@ -38,11 +39,10 @@ class PermissionsService {
     return await _checkAndRequestBatteryOptimization(context);
   }
 
-  // ===== طرق التحقق من الأذونات =====
+  // ===== طرق التحقق من الأذونات (بدون طلب) =====
 
   /// التحقق فقط من الأذونات الأساسية بدون طلبها
   static Future<bool> _checkBasePermissions() async {
-    // تصحيح الطريقة - التحقق فقط بدون طلب
     Map<Permission, PermissionStatus> statuses = {
       Permission.phone: await Permission.phone.status,
       Permission.notification: await Permission.notification.status,
@@ -51,22 +51,10 @@ class PermissionsService {
     return statuses.values.every((status) => status.isGranted);
   }
 
-  /// طلب الأذونات الأساسية
-  static Future<bool> _requestBasePermissions() async {
-    Map<Permission, PermissionStatus> statuses = await [
-      Permission.phone,
-      Permission.notification,
-    ].request();
-
-    return statuses.values.every((status) => status.isGranted);
-  }
-
   /// التحقق فقط من إذن إحصائيات الاستخدام
   static Future<bool> _checkUsageStatsPermission(BuildContext context) async {
     try {
-      bool hasPermission =
-          await platform.invokeMethod('checkUsageStatsPermission');
-      return hasPermission;
+      return await platform.invokeMethod('checkUsageStatsPermission');
     } on PlatformException catch (e) {
       print("خطأ في التحقق من إذن إحصائيات الاستخدام: ${e.message}");
       return false;
@@ -84,13 +72,23 @@ class PermissionsService {
     if (sdkVersion < 31) return true;
 
     try {
-      bool isIgnoringBatteryOptimizations =
-          await platform.invokeMethod('isIgnoringBatteryOptimizations');
-      return isIgnoringBatteryOptimizations;
+      return await platform.invokeMethod('isIgnoringBatteryOptimizations');
     } on PlatformException catch (e) {
       print("خطأ في التحقق من إذن تجاهل تحسينات البطارية: ${e.message}");
       return false;
     }
+  }
+
+  // ===== طرق طلب الأذونات =====
+
+  /// طلب الأذونات الأساسية
+  static Future<bool> _requestBasePermissions() async {
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.phone,
+      Permission.notification,
+    ].request();
+
+    return statuses.values.every((status) => status.isGranted);
   }
 
   /// التحقق من وطلب إذن إحصائيات الاستخدام
@@ -142,7 +140,7 @@ class PermissionsService {
     }
   }
 
-  // ===== طرق واجهة المستخدم =====
+  // ===== حوارات واجهة المستخدم =====
 
   /// عرض حوار لتوجيه المستخدم إلى إعدادات إذن الوصول للاستخدام
   static Future<void> _showUsageAccessDialog(BuildContext context) async {

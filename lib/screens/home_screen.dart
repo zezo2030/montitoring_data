@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../services/data_usage_service.dart';
 import '../widgets/data_usage_stream_widget.dart';
+import '../models/data_usage_model.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
