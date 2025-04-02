@@ -19,7 +19,7 @@ object DataUsageCalculator {
     var lastTodayDataUsage: Double = 0.0
     var lastTimestamp: Long = System.currentTimeMillis()
 
-    // الحصول على استخدام البيانات الحالي بالميجابايت (آخر 5 دقائق)
+    // الحصول على استخدام البيانات الحالي بالميجابايت (آخر 3 ساعات)
     fun getCurrentDataUsage(context: Context): Double {
         try {
             if (!hasUsageStatsPermission(context)) {
@@ -34,7 +34,7 @@ object DataUsageCalculator {
 
                 val calendar = Calendar.getInstance()
                 val endTime = calendar.timeInMillis
-                calendar.add(Calendar.MINUTE, -5) // آخر 5 دقائق
+                calendar.add(Calendar.HOUR, -3) // آخر 3 ساعات
                 val startTime = calendar.timeInMillis
 
                 try {
@@ -127,7 +127,7 @@ object DataUsageCalculator {
     }
 
     // التحقق من وجود إذن الوصول إلى إحصائيات الاستخدام
-    private fun hasUsageStatsPermission(context: Context): Boolean {
+    fun hasUsageStatsPermission(context: Context): Boolean {
         try {
             val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
             val mode =

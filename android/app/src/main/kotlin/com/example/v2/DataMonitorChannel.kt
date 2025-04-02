@@ -68,7 +68,7 @@ class DataMonitorChannel(private val context: Context) : MethodChannel.MethodCal
 
             val calendar = Calendar.getInstance()
             val endTime = calendar.timeInMillis
-            calendar.add(Calendar.MINUTE, -5) // آخر 5 دقائق
+            calendar.add(Calendar.HOUR, -3) // آخر 3 ساعات
             val startTime = calendar.timeInMillis
 
             try {

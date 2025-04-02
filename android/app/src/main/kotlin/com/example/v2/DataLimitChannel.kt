@@ -58,7 +58,7 @@ class DataLimitChannel(private val context: Context) : MethodChannel.MethodCallH
     }
 
     // الحصول على الحد اليومي الحالي بالميجابايت
-    private fun getDailyLimit(): Double {
+    fun getDailyLimit(): Double {
         return prefs.getFloat(KEY_DAILY_LIMIT, DEFAULT_DAILY_LIMIT.toFloat()).toDouble()
     }
 
@@ -89,8 +89,8 @@ class DataLimitChannel(private val context: Context) : MethodChannel.MethodCallH
         }
 
         val notificationId = 2
-        val title = "تنبيه تجاوز حد البيانات"
-        val text = "لقد تجاوزت الحد اليومي المحدد لاستهلاك البيانات"
+        val title = "Data Usage Limit Exceeded"
+        val text = "You have exceeded your daily data usage limit"
 
         val intent =
                 Intent(context, MainActivity::class.java).apply {
@@ -124,8 +124,8 @@ class DataLimitChannel(private val context: Context) : MethodChannel.MethodCallH
     // إنشاء قناة الإشعارات
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "تنبيهات حدود البيانات"
-            val descriptionText = "إشعارات عند تجاوز حد استهلاك البيانات اليومي"
+            val name = "Data Usage Limit Alerts"
+            val descriptionText = "Notifications when exceeding daily data usage limit"
             val importance = NotificationManager.IMPORTANCE_HIGH
 
             val channel =

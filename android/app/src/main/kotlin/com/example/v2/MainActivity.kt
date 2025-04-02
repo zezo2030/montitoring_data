@@ -31,6 +31,8 @@ class MainActivity : FlutterActivity() {
     private val DATA_MONITOR_CHANNEL = "com.example.v2/data_monitor"
     private val DATA_LIMIT_CHANNEL = "com.example.v2/data_limit"
     private val DATA_STREAM_CHANNEL = "com.example.v2/data_stream"
+    private val APP_DATA_USAGE_CHANNEL = "com.example.v2/app_data_usage"
+    private val APP_ICON_CHANNEL = "com.example.v2/app_icon"
 
     // معالج لإرسال تحديثات دورية
     private val handler = Handler(Looper.getMainLooper())
@@ -174,6 +176,14 @@ class MainActivity : FlutterActivity() {
                         }
                     }
 
+            // تهيئة قناة استخدام بيانات التطبيقات
+            MethodChannel(flutterEngine.dartExecutor.binaryMessenger, APP_DATA_USAGE_CHANNEL)
+                    .setMethodCallHandler(AppDataUsageChannel(context))
+
+            // تهيئة قناة أيقونات التطبيقات
+            MethodChannel(flutterEngine.dartExecutor.binaryMessenger, APP_ICON_CHANNEL)
+                    .setMethodCallHandler(AppIconChannel(context))
+
             // تهيئة قناة تدفق البيانات المستمرة
             EventChannel(flutterEngine.dartExecutor.binaryMessenger, DATA_STREAM_CHANNEL)
                     .setStreamHandler(
@@ -268,7 +278,7 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    // الحصول على استخدام البيانات الحالي بالميجابايت (آخر 5 دقائق)
+    // الحصول على استخدام البيانات الحالي بالميجابايت (آخر 3 ساعات)
     private fun getCurrentDataUsage(): Double {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!hasUsageStatsPermission()) {
@@ -280,7 +290,7 @@ class MainActivity : FlutterActivity() {
 
             val calendar = Calendar.getInstance()
             val endTime = calendar.timeInMillis
-            calendar.add(Calendar.MINUTE, -5) // آخر 5 دقائق
+            calendar.add(Calendar.HOUR, -3) // آخر 3 ساعات
             val startTime = calendar.timeInMillis
 
             try {
