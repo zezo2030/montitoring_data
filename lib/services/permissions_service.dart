@@ -5,6 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 class PermissionsService {
+  // تعريف قناة المنصة باسم الحزمة الصحيح
+  static const platform = MethodChannel('com.example.v2/permissions');
+
   // تحقق من جميع الأذونات المطلوبة
   static Future<bool> checkAllPermissions(BuildContext context) async {
     // تحقق من أذونات أساسية
@@ -47,9 +50,6 @@ class PermissionsService {
   // التحقق من وطلب إذن إحصائيات الاستخدام
   static Future<bool> _checkAndRequestUsageStatsPermission(
       BuildContext context) async {
-    // استخدام قناة منصة للتحقق من إذن إحصائيات الاستخدام
-    const platform =
-        MethodChannel('com.example.data_usage_monitor/permissions');
     bool hasPermission = false;
 
     try {
@@ -93,9 +93,6 @@ class PermissionsService {
       return true; // لا حاجة للإذن على إصدارات أقدم
     }
 
-    // استخدام قناة منصة للتحقق من إذن تجاهل تحسينات البطارية
-    const platform =
-        MethodChannel('com.example.data_usage_monitor/permissions');
     bool isIgnoringBatteryOptimizations = false;
 
     try {
@@ -143,8 +140,6 @@ class PermissionsService {
               onPressed: () async {
                 Navigator.of(context).pop();
                 // فتح صفحة إعدادات الوصول للاستخدام
-                const platform =
-                    MethodChannel('com.example.data_usage_monitor/permissions');
                 try {
                   await platform.invokeMethod('openUsageAccessSettings');
                 } on PlatformException catch (e) {
