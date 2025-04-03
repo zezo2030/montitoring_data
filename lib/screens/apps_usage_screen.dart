@@ -348,6 +348,10 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
   }) {
     final theme = Theme.of(context);
 
+    // التحقق مما إذا كان التطبيق هو تطبيق نظام
+    final isSystemApp = _appsData.any(
+        (app) => app['packageName'] == packageName && app['isSystem'] == true);
+
     // تنسيق استخدام البيانات
     final formattedUsage = usageMB >= 1024
         ? '${(usageMB / 1024).toStringAsFixed(2)} جيجابايت'
@@ -365,13 +369,19 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withOpacity(0.7),
-                  Colors.white.withOpacity(0.4),
+                  isSystemApp
+                      ? Colors.blue.withOpacity(0.7)
+                      : Colors.white.withOpacity(0.7),
+                  isSystemApp
+                      ? Colors.lightBlue.withOpacity(0.4)
+                      : Colors.white.withOpacity(0.4),
                 ],
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withOpacity(0.5),
+                color: isSystemApp
+                    ? Colors.blue.withOpacity(0.5)
+                    : Colors.white.withOpacity(0.5),
                 width: 1.5,
               ),
               boxShadow: [
@@ -427,12 +437,35 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
                             ),
                           ),
               ),
-              title: Text(
-                appName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      appName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  if (isSystemApp)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'نظام',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,7 +477,7 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
                         : packageName,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[700],
+                      color: isSystemApp ? Colors.white70 : Colors.grey[700],
                     ),
                   ),
                 ],
@@ -456,10 +489,12 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
                 ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.secondary,
-                    ],
+                    colors: isSystemApp
+                        ? [Colors.blue[700]!, Colors.blue[500]!]
+                        : [
+                            theme.colorScheme.primary,
+                            theme.colorScheme.secondary,
+                          ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),

@@ -439,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             child: FloatingActionButton(
-              heroTag: "appsUsageBtn",
+              heroTag: "appsBtn",
               onPressed: _navigateToAppsUsage,
               tooltip: 'استخدام التطبيقات',
               backgroundColor: Colors.transparent,

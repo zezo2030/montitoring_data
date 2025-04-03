@@ -63,8 +63,8 @@ object AppDataUsageCalculator {
 
                 // إنشاء قائمة بالتطبيقات وبياناتها
                 for ((uid, bytes) in appUsageMap) {
-                    // تجاهل التطبيقات النظامية والمحذوفة
-                    if (uid <= Process.FIRST_APPLICATION_UID) continue
+                    // تحديد ما إذا كان هذا تطبيق نظام أم لا
+                    val isSystemApp = uid <= Process.FIRST_APPLICATION_UID
 
                     try {
                         val packages = packageManager.getPackagesForUid(uid)
@@ -80,6 +80,7 @@ object AppDataUsageCalculator {
                             appData.put("packageName", packageName)
                             appData.put("appName", appName)
                             appData.put("usageMB", usageMB)
+                            appData.put("isSystem", isSystemApp)
 
                             // إضافة معلومات الأيقونة
                             try {
@@ -152,8 +153,8 @@ object AppDataUsageCalculator {
 
                 // إنشاء قائمة بالتطبيقات وبياناتها
                 for ((uid, bytes) in appUsageMap) {
-                    // تجاهل التطبيقات النظامية والمحذوفة
-                    if (uid <= Process.FIRST_APPLICATION_UID) continue
+                    // تحديد ما إذا كان هذا تطبيق نظام أم لا
+                    val isSystemApp = uid <= Process.FIRST_APPLICATION_UID
 
                     try {
                         val packages = packageManager.getPackagesForUid(uid)
@@ -169,6 +170,7 @@ object AppDataUsageCalculator {
                             appData.put("packageName", packageName)
                             appData.put("appName", appName)
                             appData.put("usageMB", usageMB)
+                            appData.put("isSystem", isSystemApp)
 
                             // إضافة معلومات الأيقونة
                             try {
