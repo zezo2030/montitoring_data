@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../services/permissions_service.dart';
-import 'home_screen.dart';
 
 class PermissionsScreen extends StatefulWidget {
   const PermissionsScreen({super.key});
@@ -55,7 +54,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     }
 
     if (hasPermissions) {
-      _navigateToHomeScreen();
+      _navigateToLoginScreen();
     }
   }
 
@@ -75,8 +74,8 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     }
   }
 
-  void _navigateToHomeScreen() {
-    Navigator.of(context).pushReplacementNamed('/home');
+  void _navigateToLoginScreen() {
+    Navigator.of(context).pushReplacementNamed('/login');
   }
 
   @override
