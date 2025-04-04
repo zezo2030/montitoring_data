@@ -9,7 +9,7 @@ import 'package:data_usage_monitor/screens/apps_usage_screen.dart';
 /// إنشاء مثيل من الموجه بناءً على كيوبت المصادقة
 GoRouter createRouter() {
   return GoRouter(
-    initialLocation: '/login',
+    initialLocation: '/home',
     debugLogDiagnostics: true,
     routes: [
       GoRoute(

@@ -3,8 +3,6 @@ import 'dart:async';
 import 'dart:ui';
 import '../services/data_usage_service.dart';
 import '../widgets/data_usage_stream_widget.dart';
-import '../models/data_usage_model.dart';
-import './apps_usage_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

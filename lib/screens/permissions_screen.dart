@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:ui';
 import '../services/permissions_service.dart';
 
@@ -75,7 +76,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
   }
 
   void _navigateToLoginScreen() {
-    Navigator.of(context).pushReplacementNamed('/login');
+    context.goNamed('home');
   }
 
   @override
