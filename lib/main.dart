@@ -1,8 +1,53 @@
 import 'package:flutter/material.dart';
-import 'package:data_usage_monitor/router/app_router.dart';
+import 'package:ABRAR/router/app_router.dart';
+import 'package:ABRAR/services/device_usage_sync_service.dart';
+import 'package:ABRAR/services/firebase_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:ABRAR/services/service_locator.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // تهيئة Firebase مع معالجة الأخطاء
+  try {
+    // تهيئة Firebase
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+
+    // إعداد service locator
+    await setupServiceLocator();
+
+    // تفعيل وضع عدم الاتصال لـ Firestore
+    getIt<FirebaseService>().enableOfflineMode();
+
+    // التحقق من الاتصال بـ Firestore
+    bool isConnected = await getIt<FirebaseService>().checkConnection();
+    if (isConnected) {
+      print('تم الاتصال بـ Firebase بنجاح');
+    } else {
+      print('تم تشغيل التطبيق في وضع عدم الاتصال');
+    }
+
+    // تهيئة خدمة مزامنة استخدام الجهاز
+    final syncService = DeviceUsageSyncService();
+    await syncService.initialize();
+
+    // مزامنة الاستهلاك اليومي مع فايربيز
+    bool syncResult = await syncService.syncDailyUsageToFirebase();
+    if (syncResult) {
+      print('تم رفع بيانات الاستهلاك اليومي إلى فايربيز بنجاح');
+    } else {
+      print('تعذر رفع بيانات الاستهلاك اليومي، سيتم المحاولة لاحقاً');
+    }
+
+    print('تم تهيئة التطبيق بنجاح');
+  } catch (e) {
+    print('خطأ أثناء تهيئة التطبيق: $e');
+    // الاستمرار في تشغيل التطبيق حتى مع وجود خطأ
+  }
+
   runApp(const MyApp());
 }
 

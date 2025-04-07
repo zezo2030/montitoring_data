@@ -14,7 +14,7 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
     with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   List<Map<String, dynamic>> _appsData = [];
-  int _selectedTimeRange = 24; // افتراضي: آخر 24 ساعة
+  int _selectedTimeRange = 24; // Default: Last 24 hours
   late TabController _tabController;
   final Map<String, Image?> _appIcons = {};
   final Map<String, bool> _loadingIcons = {};
@@ -46,30 +46,30 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
         _isLoading = false;
       });
 
-      // تحميل أيقونات التطبيقات مسبقاً
+      // Preload app icons
       _preloadAppIcons();
     } catch (e) {
-      print('خطأ في تحميل بيانات التطبيقات: $e');
+      print('Error loading app data: $e');
       setState(() {
         _isLoading = false;
       });
     }
   }
 
-  // تحميل أيقونات التطبيقات مسبقاً
+  // Preload app icons
   Future<void> _preloadAppIcons() async {
     for (final app in _appsData) {
       final packageName = app['packageName'] as String;
 
       if (!_appIcons.containsKey(packageName) &&
           !_loadingIcons.containsKey(packageName)) {
-        // وضع علامة بأننا نقوم بتحميل الأيقونة لمنع التحميل المزدوج
+        // Mark that we're loading the icon to prevent duplicate loading
         _loadingIcons[packageName] = true;
 
         try {
           final icon = await AppIconService.getAppIcon(packageName);
 
-          // تحديث الواجهة فقط إذا كانت الشاشة لا تزال مرئية
+          // Update UI only if screen is still visible
           if (mounted) {
             setState(() {
               _appIcons[packageName] = icon;
@@ -77,7 +77,7 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
             });
           }
         } catch (e) {
-          print('خطأ في تحميل أيقونة التطبيق $packageName: $e');
+          print('Error loading app icon $packageName: $e');
           if (mounted) {
             setState(() {
               _loadingIcons.remove(packageName);
@@ -104,7 +104,7 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('استخدام التطبيقات'),
+        title: const Text('Apps Usage'),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white.withOpacity(0.7),
@@ -114,9 +114,9 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
           labelColor: theme.colorScheme.primary,
           unselectedLabelColor: Colors.grey,
           tabs: const [
-            Tab(text: 'الكل'),
-            Tab(text: 'واي فاي'),
-            Tab(text: 'بيانات الجوال'),
+            Tab(text: 'All'),
+            Tab(text: 'WiFi'),
+            Tab(text: 'Mobile Data'),
           ],
         ),
       ),
@@ -133,9 +133,10 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
         ),
         child: Column(
           children: [
-            const SizedBox(height: 120), // تعويض عن AppBar والمؤشرات
+            const SizedBox(
+                height: 120), // Compensation for AppBar and indicators
 
-            // أزرار تحديد النطاق الزمني
+            // Time range selection buttons
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Card(
@@ -153,16 +154,16 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _timeFilterButton('3 ساعات', 3),
-                      _timeFilterButton('24 ساعة', 24),
-                      _timeFilterButton('7 أيام', 168), // 7*24 = 168 ساعة
+                      _timeFilterButton('3 Hours', 3),
+                      _timeFilterButton('24 Hours', 24),
+                      _timeFilterButton('7 Days', 168), // 7*24 = 168 hours
                     ],
                   ),
                 ),
               ),
             ),
 
-            // عرض البيانات
+            // Data display
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -242,7 +243,7 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
       return _buildEmptyView();
     }
 
-    // ترتيب التطبيقات حسب استخدام الواي فاي
+    // Sort apps by WiFi usage
     final wifiSortedApps = List<Map<String, dynamic>>.from(_appsData);
     wifiSortedApps.sort((a, b) => (b['wifiUsageMB'] as num)
         .toDouble()
@@ -250,7 +251,7 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
 
     return _buildAppsList(
         wifiSortedApps, (app) => (app['wifiUsageMB'] as num).toDouble(),
-        networkType: 'واي فاي');
+        networkType: 'WiFi');
   }
 
   Widget _buildMobileUsageList() {
@@ -258,7 +259,7 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
       return _buildEmptyView();
     }
 
-    // ترتيب التطبيقات حسب استخدام بيانات الجوال
+    // Sort apps by mobile data usage
     final mobileSortedApps = List<Map<String, dynamic>>.from(_appsData);
     mobileSortedApps.sort((a, b) => (b['mobileUsageMB'] as num)
         .toDouble()
@@ -266,7 +267,7 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
 
     return _buildAppsList(
         mobileSortedApps, (app) => (app['mobileUsageMB'] as num).toDouble(),
-        networkType: 'بيانات الجوال');
+        networkType: 'Mobile Data');
   }
 
   Widget _buildEmptyView() {
@@ -298,7 +299,7 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
                 Icon(Icons.info_outline, size: 48, color: Colors.grey),
                 SizedBox(height: 16),
                 Text(
-                  'لا توجد بيانات متاحة',
+                  'No data available',
                   style: TextStyle(fontSize: 18),
                 ),
               ],
@@ -312,7 +313,7 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
   Widget _buildAppsList(List<Map<String, dynamic>> apps,
       double Function(Map<String, dynamic>) getUsage,
       {String? networkType}) {
-    // تصفية التطبيقات ذات استخدام البيانات الصفري
+    // Filter apps with zero data usage
     final filteredApps = apps.where((app) => getUsage(app) > 0).toList();
 
     if (filteredApps.isEmpty) {
@@ -348,14 +349,14 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
   }) {
     final theme = Theme.of(context);
 
-    // التحقق مما إذا كان التطبيق هو تطبيق نظام
+    // Check if app is a system app
     final isSystemApp = _appsData.any(
         (app) => app['packageName'] == packageName && app['isSystem'] == true);
 
-    // تنسيق استخدام البيانات
+    // Format data usage
     final formattedUsage = usageMB >= 1024
-        ? '${(usageMB / 1024).toStringAsFixed(2)} جيجابايت'
-        : '${usageMB.toStringAsFixed(2)} ميجابايت';
+        ? '${(usageMB / 1024).toStringAsFixed(2)} GB'
+        : '${usageMB.toStringAsFixed(2)} MB';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -457,7 +458,7 @@ class _AppsUsageScreenState extends State<AppsUsageScreen>
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
-                        'نظام',
+                        'System',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 10,

@@ -1,15 +1,18 @@
+import 'package:ABRAR/cubits/cubit/home_cubit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:data_usage_monitor/screens/login_screen.dart';
-import 'package:data_usage_monitor/screens/signup_screen.dart';
-import 'package:data_usage_monitor/screens/permissions_screen.dart';
-import 'package:data_usage_monitor/screens/home_screen.dart';
-import 'package:data_usage_monitor/screens/apps_usage_screen.dart';
+import 'package:ABRAR/screens/login_screen.dart';
+import 'package:ABRAR/screens/signup_screen.dart';
+import 'package:ABRAR/screens/permissions_screen.dart';
+import 'package:ABRAR/screens/home_screen.dart';
+import 'package:ABRAR/screens/apps_usage_screen.dart';
+import 'package:ABRAR/screens/settings_screen.dart';
 
 /// إنشاء مثيل من الموجه بناءً على كيوبت المصادقة
 GoRouter createRouter() {
   return GoRouter(
-    initialLocation: '/home',
+    initialLocation: '/',
     debugLogDiagnostics: true,
     routes: [
       GoRoute(
@@ -30,12 +33,20 @@ GoRouter createRouter() {
       GoRoute(
         path: '/home',
         name: 'home',
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) => BlocProvider(
+          create: (context) => HomeCubit(),
+          child: const HomeScreen(),
+        ),
       ),
       GoRoute(
         path: '/apps_usage',
         name: 'apps_usage',
         builder: (context, state) => const AppsUsageScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
     ],
     // // التحقق من حالة المصادقة قبل الانتقال

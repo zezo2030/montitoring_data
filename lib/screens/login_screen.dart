@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import 'package:data_usage_monitor/widgets/login_form_widget.dart';
-import 'package:data_usage_monitor/extensions/gradient_extensions.dart';
-import 'package:data_usage_monitor/extensions/padding_extensions.dart';
+import 'package:ABRAR/widgets/login_form_widget.dart';
+import 'package:ABRAR/extensions/gradient_extensions.dart';
+import 'package:ABRAR/extensions/padding_extensions.dart';
 import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatelessWidget {

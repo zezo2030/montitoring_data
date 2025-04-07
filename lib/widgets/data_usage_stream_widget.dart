@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:ui';
 import '../models/data_usage_model.dart';
 import '../services/data_usage_service.dart';
+import '../services/firebase_service.dart';
+import '../services/notification_service.dart';
+import '../services/service_locator.dart';
 
 class DataUsageStreamWidget extends StatefulWidget {
   final Widget Function(BuildContext, DataUsageUpdate) builder;
@@ -17,14 +21,55 @@ class DataUsageStreamWidget extends StatefulWidget {
 
 class _DataUsageStreamWidgetState extends State<DataUsageStreamWidget> {
   late Stream<DataUsageUpdate> _dataStream;
+  StreamSubscription<int>? _dailyLimitSubscription;
+  DataUsageUpdate? _lastData;
+  late final NotificationService _notificationService;
+  bool _hasNotifiedApproaching = false;
+  bool _hasNotifiedLimit = false;
 
   @override
   void initState() {
     super.initState();
     _dataStream = DataUsageService.getDataUsageStream();
 
+    // الحصول على خدمة الإشعارات
+    _notificationService = getIt<NotificationService>();
+
+    // الاستماع للتغييرات في الحد اليومي وتحديث واجهة المستخدم
+    _setupDailyLimitListener();
+
     // Ensure monitoring service is active
     _ensureMonitoringIsActive();
+  }
+
+  void _setupDailyLimitListener() {
+    // الاشتراك في تدفق تحديثات الحد اليومي من Firebase
+    final firebaseService = FirebaseService();
+    _dailyLimitSubscription =
+        firebaseService.dailyLimitStream.listen((newLimit) {
+      print(
+          'تم استلام تحديث حد الاستهلاك في واجهة المستخدم: $newLimit ميجابايت');
+
+      // إذا كان هناك بيانات سابقة، قم بتحديثها واستدعاء setState لإعادة البناء
+      if (_lastData != null && mounted) {
+        setState(() {
+          // إنشاء نسخة جديدة من البيانات مع الحد الجديد
+          _lastData = DataUsageUpdate(
+            currentUsage: _lastData!.currentUsage,
+            todayUsage: _lastData!.todayUsage,
+            timestamp: DateTime.now().millisecondsSinceEpoch,
+            dailyLimit: newLimit.toDouble(),
+          );
+
+          print('تم تحديث واجهة المستخدم بالحد الجديد: $newLimit ميجابايت');
+        });
+      } else {
+        print(
+            'لا يمكن تحديث واجهة المستخدم: بيانات غير متوفرة أو الواجهة غير مرئية');
+      }
+    }, onError: (error) {
+      print('خطأ في استقبال تحديثات الحد اليومي في واجهة المستخدم: $error');
+    });
   }
 
   Future<void> _ensureMonitoringIsActive() async {
@@ -35,26 +80,97 @@ class _DataUsageStreamWidgetState extends State<DataUsageStreamWidget> {
   }
 
   @override
+  void dispose() {
+    _dailyLimitSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<DataUsageUpdate>(
       stream: _dataStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
-            !snapshot.hasData) {
+            !snapshot.hasData &&
+            _lastData == null) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final data = snapshot.data ??
-            DataUsageUpdate(
-              currentUsage: 0,
-              todayUsage: 0,
-              timestamp: DateTime.now().millisecondsSinceEpoch,
-              dailyLimit: 0,
+        // استخدام آخر بيانات محفوظة أو البيانات الجديدة من التدفق
+        DataUsageUpdate data;
+
+        if (snapshot.hasData) {
+          // إذا كان هناك بيانات جديدة، قم بتحديث البيانات المحفوظة
+          data = snapshot.data!;
+
+          // المحافظة على الحد اليومي الحالي إذا كانت هناك بيانات محفوظة
+          if (_lastData != null && _lastData!.dailyLimit > 0) {
+            // استخدام آخر قيمة للحد اليومي لتجنب فقدانها في البيانات الجديدة
+            data = DataUsageUpdate(
+              currentUsage: data.currentUsage,
+              todayUsage: data.todayUsage,
+              timestamp: data.timestamp,
+              dailyLimit: _lastData!.dailyLimit,
             );
+          }
+
+          // تحديث البيانات المحفوظة
+          _lastData = data;
+
+          // التحقق من الحد اليومي وإرسال إشعارات إذا لزم الأمر
+          _checkDataUsageForNotifications(data);
+        } else {
+          // استخدام البيانات المحفوظة أو إنشاء بيانات افتراضية
+          data = _lastData ??
+              DataUsageUpdate(
+                currentUsage: 0,
+                todayUsage: 0,
+                timestamp: DateTime.now().millisecondsSinceEpoch,
+                dailyLimit: 0,
+              );
+        }
 
         return widget.builder(context, data);
       },
     );
+  }
+
+  // التحقق من استهلاك البيانات وإرسال إشعارات إذا لزم الأمر
+  void _checkDataUsageForNotifications(DataUsageUpdate data) {
+    // لا نفعل شيئًا إذا لم يتم تعيين حد يومي
+    if (data.dailyLimit <= 0) return;
+
+    // حساب النسبة المئوية من الحد اليومي
+    final percentage = (data.todayUsage / data.dailyLimit) * 100;
+
+    // إذا تم تجاوز الحد اليومي ولم يتم إرسال إشعار بعد
+    if (percentage >= 100 && !_hasNotifiedLimit) {
+      _notificationService.showDailyLimitReachedNotification(
+        usage: data.todayUsage,
+        limit: data.dailyLimit,
+      );
+      _hasNotifiedLimit = true;
+      print(
+          'تم إرسال إشعار تجاوز الحد اليومي: ${percentage.toStringAsFixed(1)}%');
+    }
+    // إذا اقترب من الحد (80% مثلاً) ولم يتم إرسال إشعار بعد
+    else if (percentage >= 80 && percentage < 100 && !_hasNotifiedApproaching) {
+      _notificationService.showApproachingLimitNotification(
+        usage: data.todayUsage,
+        limit: data.dailyLimit,
+        threshold: 80,
+      );
+      _hasNotifiedApproaching = true;
+      print(
+          'تم إرسال إشعار الاقتراب من الحد اليومي: ${percentage.toStringAsFixed(1)}%');
+    }
+    // إعادة تعيين المتغيرات إذا انخفض الاستهلاك (ربما تم تحديث البيانات)
+    else if (percentage < 75) {
+      _hasNotifiedApproaching = false;
+      if (percentage < 95) {
+        _hasNotifiedLimit = false;
+      }
+    }
   }
 }
 
